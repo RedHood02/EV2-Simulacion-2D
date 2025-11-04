@@ -35,7 +35,7 @@ public class PlayerController : MonoBehaviour
 
     void Attack()
     {
-        Instantiate(bulletObj, projectileSpawnPoint.position, Quaternion.identity);
+        Instantiate(bulletObj, projectileSpawnPoint.position, transform.rotation);
         Debug.Log("Attacked");
     }
 }
