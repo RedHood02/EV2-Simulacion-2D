@@ -22,7 +22,7 @@ public class BulletController : MonoBehaviour
     {
         AsteroidManager.instance.GetBullet(this);
         water = Water.instance;
-        Destroy(gameObject, 10);
+        Destroy(gameObject, 6);
     }
 
     private void Start()
@@ -56,7 +56,7 @@ public class BulletController : MonoBehaviour
         Bounds ball = sr.bounds;
         Bounds waterBounds = water.WorldBounds;
 
-        // ¿Hay intersección entre agua y pelota?
+        // ï¿½Hay intersecciï¿½n entre agua y pelota?
         if (ball.Intersects(waterBounds))
         {
             // Solapamiento vertical
@@ -72,10 +72,10 @@ public class BulletController : MonoBehaviour
             float fracVertical = Mathf.Clamp01(overlapHeight / ball.size.y);
             float fracHorizontal = Mathf.Clamp01(overlapWidth / ball.size.x);
 
-            // Fracción sumergida aproximada por área de bounds (mejor que solo vertical)
+            // Fracciï¿½n sumergida aproximada por ï¿½rea de bounds (mejor que solo vertical)
             float submergedFraction = Mathf.Clamp01(fracVertical * fracHorizontal);
 
-            // Volumen desplazado (Arquímedes)
+            // Volumen desplazado (Arquï¿½medes)
             float displacedVolume = volume * submergedFraction;
 
             // Empuje: Fb = ? * V_desplazado * g  (hacia arriba)
@@ -84,7 +84,7 @@ public class BulletController : MonoBehaviour
 
             velocity += buoyantForce;
 
-            // Amortiguación dentro del agua (aplicada a la velocidad)
+            // Amortiguaciï¿½n dentro del agua (aplicada a la velocidad)
             velocity *= Mathf.Clamp01(Mathf.Lerp(1f, dampingInWater, submergedFraction));
         }
 
