@@ -8,6 +8,7 @@ public class Asteroid : MonoBehaviour
     public float gravitationalConstant = 0.5f;
     public float mass = 100f;
     public float gravityRadius = 50f;
+    public float radius = 5f;
 
     bool inGravity;
 
@@ -64,5 +65,8 @@ public class Asteroid : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, gravityRadius);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, radius);
     }
 }
