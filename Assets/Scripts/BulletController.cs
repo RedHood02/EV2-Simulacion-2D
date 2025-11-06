@@ -16,13 +16,12 @@ public class BulletController : MonoBehaviour
 
     public float dampingInWater = 0.9f;
     public float dampingInAir = 0.999f;
-    
 
     private void Awake()
     {
         AsteroidManager.instance.GetBullet(this);
         water = Water.instance;
-        Destroy(gameObject, 6);
+        Destroy(gameObject, 6f);
     }
 
     private void Start()
@@ -32,39 +31,63 @@ public class BulletController : MonoBehaviour
 
     private void Update()
     {
-        //gravedad y movimiento
+        float dt = Time.deltaTime;
+
+        // --- Gravity and movement ---
         CalculateCurrGravity();
-        velocity += currentGravityForce * Time.deltaTime;
-        transform.position += velocity * Time.deltaTime;
+        velocity += currentGravityForce * dt;
+        transform.position += velocity * dt;
         transform.up = velocity.normalized;
 
-        //colision con asteroides
-        currAsteroids = AsteroidManager.instance.Asteroids;
-        foreach(Asteroid x in currAsteroids)
+        // --- Collision with asteroids ---
+        HandleAsteroidCollisions();
+
+        // --- Buoyancy in water ---
+        HandleBuoyancy(dt);
+    }
+
+    private void HandleAsteroidCollisions()
+    {
+        // Copy list to avoid breaking the iteration if asteroids are removed
+        List<Asteroid> asteroids = new List<Asteroid>(AsteroidManager.instance.Asteroids);
+
+        foreach (Asteroid asteroid in asteroids)
         {
-            if(Vector3.Distance(x.transform.position, transform.position) < x.radius)
+            if (asteroid == null) continue;
+
+            float distance = Vector3.Distance(asteroid.transform.position, transform.position);
+            if (distance < asteroid.radius)
             {
-                AsteroidManager.instance.Asteroids.Remove(x);
-                Destroy(x.gameObject);
-                Destroy(this.gameObject);
+                // Safely remove from manager (if still exists)
+                AsteroidManager manager = AsteroidManager.instance;
+                if (manager != null && manager.Asteroids.Contains(asteroid))
+                    manager.Asteroids.Remove(asteroid);
+
+                // Create explosion or heat effect if desired
+                if (asteroid.explosionPrefab != null)
+                    Instantiate(asteroid.explosionPrefab, asteroid.transform.position, Quaternion.identity);
+
+                Destroy(asteroid.gameObject);
+                Destroy(gameObject);
+                return; // stop processing after destruction
             }
         }
+    }
 
-        //flotabilidad en el agua
+    private void HandleBuoyancy(float dt)
+    {
+        if (sr == null || water == null) return;
 
-        float dt = Time.deltaTime;
         Bounds ball = sr.bounds;
         Bounds waterBounds = water.WorldBounds;
 
-        // �Hay intersecci�n entre agua y pelota?
+        // Check intersection
         if (ball.Intersects(waterBounds))
         {
-            // Solapamiento vertical
             float overlapBottom = Mathf.Max(ball.min.y, waterBounds.min.y);
             float overlapTop = Mathf.Min(ball.max.y, waterBounds.max.y);
             float overlapHeight = Mathf.Max(0f, overlapTop - overlapBottom);
 
-            // Solapamiento horizontal
             float overlapLeft = Mathf.Max(ball.min.x, waterBounds.min.x);
             float overlapRight = Mathf.Min(ball.max.x, waterBounds.max.x);
             float overlapWidth = Mathf.Max(0f, overlapRight - overlapLeft);
@@ -72,32 +95,32 @@ public class BulletController : MonoBehaviour
             float fracVertical = Mathf.Clamp01(overlapHeight / ball.size.y);
             float fracHorizontal = Mathf.Clamp01(overlapWidth / ball.size.x);
 
-            // Fracci�n sumergida aproximada por �rea de bounds (mejor que solo vertical)
             float submergedFraction = Mathf.Clamp01(fracVertical * fracHorizontal);
-
-            // Volumen desplazado (Arqu�medes)
             float displacedVolume = volume * submergedFraction;
 
-            // Empuje: Fb = ? * V_desplazado * g  (hacia arriba)
             float buoyantMag = water.density * displacedVolume;
             Vector3 buoyantForce = new Vector3(0f, buoyantMag);
-
             velocity += buoyantForce;
 
-            // Amortiguaci�n dentro del agua (aplicada a la velocidad)
+            // Apply damping inside water
             velocity *= Mathf.Clamp01(Mathf.Lerp(1f, dampingInWater, submergedFraction));
         }
 
-        transform.position += (velocity * dt);
+        // Apply position update
+        transform.position += velocity * dt;
     }
 
     public void CalculateCurrGravity()
     {
         currentGravityForce = Vector2.zero;
-        foreach (Asteroid x in currAsteroids)
+
+        // Defensive iteration (skip destroyed or null asteroids)
+        foreach (Asteroid asteroid in AsteroidManager.instance.Asteroids)
         {
-            Vector3 gravityForce = x.GetGravityForce(this);
-            Debug.Log(gravityForce);
+            if (asteroid == null || asteroid.gameObject == null)
+                continue;
+
+            Vector3 gravityForce = asteroid.GetGravityForce(this);
             currentGravityForce += gravityForce;
         }
     }
