@@ -12,6 +12,7 @@ public class GameTimer : MonoBehaviour
 
     private void Update()
     {
+        endGameTimer -= Time.deltaTime;
         timerText.text = "Survive For: " + endGameTimer;
     }
 
